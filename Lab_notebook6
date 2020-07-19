@@ -1,0 +1,300 @@
+#Lab Lab Notebook for PS6
+
+-------- 07/14/20--------------
+
+#!/usr/bin/env python
+
+#Ck= C * (Lmean-K + 1) /Lmean
+
+#physLength = kmerNum + ksize - 1
+
+# compiling program to intake seq length and contig from header line
+import re 
+
+adj_len = [] 
+
+avg_contig = 0 # sum of k cov 
+
+total_cnt = 0 #total num of contigs
+
+phy_len = 0 #total physcial length 
+
+ksize = 49 - 1 #adjust for kszie
+
+#created a code that will extract contig length and coverage from header
+#then created sum for physical length, total_cnt, and and avg contig size
+with open("contigs.fa", "r") as fh:
+    for line in fh:
+        if line.startswith('>'): #selecting seq line
+            knum = re.search('length_[0-9]+',line) #
+            knum = int(knum.group()[7:]) #slice for numerical value
+            covm = re.search('cov_[0-9]+.[0-9]+',line)
+            covm = float(covm.group()[4:]) #slice for numerical value
+            phylength = knum + ksize #calculate physical length
+            phy_len += phylength #implement to list
+            total_cnt += 1 #contig counter
+            avg_contig += covm 
+            adj_len.append(phylength)
+
+mean_c_len = avg_contig/total_cnt #taking the mean average length of contig
+avg_len = phy_len/total_cnt #
+
+N50 = phy_len/2
+adj_len.sort(reverse = True)
+count = 0
+
+for i in range(len(adj_len)):
+    count += adj_len[i]
+    if count >= N50:
+        N50_out = adj_len[i]
+        break
+print(N50_out)
+
+#Installed velvet velvet
+
+#SBATCH paremeters used to succesfully run job
+#!/bin/bash
+#SBATCH --partition=bgmp                   ### Partition
+#SBATCH --job-name=mbabins5velvet         ### Job Name
+#SBATCH --output=mbabins5velvet.txt    ###File in which to store job output
+#SBATCH --error=mbabins5velvet.er    ### File to store error in
+#SBATCH --nodes=1                       ### Needed to run job
+#SBATCH --ntasks-per-node=1                   ### Run on a single CPU
+#SBATCH --cpus-per-task=7             ### How many cpus needed for job
+#SBATCH --time=0-12:00:00               ### Wall Clock Time limit hrs:min:sec
+#SBATCH --account=bgmp                  ### Account used for job submission
+
+#velvet H script used to extract data with differentiating kmer counts
+velveth /projects/bgmp/mbabins5/Bi621/PS6 31 -fastq -shortPaired /projects/bgmp/shared/Bi621/800_3_PE5_interleaved.*
+# velveth out_31 31 -fastq -shortPaired pair.fastq -general format for velveth
+velveth /projects/bgmp/mbabins5/Bi621/PS6 41 -fastq -shortPaired /projects/bgmp/shared/Bi621/800_3_PE5_interleaved.*
+# velveth out_41 41 -fastq -shortPaired pair.fastq
+velveth /projects/bgmp/mbabins5/Bi621/PS6 49 -fastq -shortPaired /projects/bgmp/shared/Bi621/800_3_PE5_interleaved.*
+# velveth out_49 49 -fastq -shortPaired pair.fastq
+
+
+#velvetg script 
+velvetg /projects/bgmp/mbabins5/bioinformatics/Bi621/PS/PS6 -exp_cov auto -cov_cutoff auto -ins_length auto
+#-takes in where to output, exponential coverage, coverage cuttoff, and insert length size. Can be auto or adjusted
+#31 Kmer run 
+        User time (seconds): 48.76
+        System time (seconds): 2.07
+        Percent of CPU this job got: 485%
+        Elapsed (wall clock) time (h:mm:ss or m:ss): 0:10.47
+        Average shared text size (kbytes): 0
+        Average unshared data size (kbytes): 0
+        Average stack size (kbytes): 0
+        Average total size (kbytes): 0
+        Maximum resident set size (kbytes): 1102240
+        Average resident set size (kbytes): 0
+        Major (requiring I/O) page faults: 0
+        Minor (reclaiming a frame) page faults: 208636
+        Voluntary context switches: 14813
+        Involuntary context switches: 4387
+        Swaps: 0
+        File system inputs: 0
+        File system outputs: 0
+        Socket messages sent: 0
+        Socket messages received: 0
+        Signals delivered: 0
+        Page size (bytes): 4096
+        Exit status: 0
+
+
+#41 Kmer run 
+        User time (seconds): 42.06
+        System time (seconds): 1.86
+        Percent of CPU this job got: 441%
+        Elapsed (wall clock) time (h:mm:ss or m:ss): 0:09.95
+        Average shared text size (kbytes): 0
+        Average unshared data size (kbytes): 0
+        Average stack size (kbytes): 0
+        Average total size (kbytes): 0
+        Maximum resident set size (kbytes): 1088848
+        Average resident set size (kbytes): 0
+        Major (requiring I/O) page faults: 0
+        Minor (reclaiming a frame) page faults: 205288
+        Voluntary context switches: 13316
+        Involuntary context switches: 1940
+        Swaps: 0
+        File system inputs: 0
+        File system outputs: 0
+        Socket messages sent: 0
+        Socket messages received: 0
+        Signals delivered: 0
+        Page size (bytes): 4096
+        Exit status: 0
+
+#49 Kmer run 
+        User time (seconds): 36.90
+        System time (seconds): 1.85
+        Percent of CPU this job got: 387%
+        Elapsed (wall clock) time (h:mm:ss or m:ss): 0:09.99
+        Average shared text size (kbytes): 0
+        Average unshared data size (kbytes): 0
+        Average stack size (kbytes): 0
+        Average total size (kbytes): 0
+        Maximum resident set size (kbytes): 1058472
+        Average resident set size (kbytes): 0
+        Major (requiring I/O) page faults: 0
+        Minor (reclaiming a frame) page faults: 197653
+        Voluntary context switches: 11295
+        Involuntary context switches: 1667
+        Swaps: 0
+        File system inputs: 0
+        File system outputs: 0
+        Socket messages sent: 0
+        Socket messages received: 0
+        Signals delivered: 0
+        Page size (bytes): 4096
+        Exit status: 0
+
+
+#velvet g run diagnostics :
+[0.000000] Reading roadmap file /projects/bgmp/mbabins5/bioinformatics/Bi621/PS/PS6/Roadmaps
+[2.975461] 2567781 roadmaps read
+[2.980520] Creating insertion markers
+[3.504242] Ordering insertion markers
+[3.578727] Counting preNodes
+[3.814009] 1228386 preNodes counted, creating them now
+[6.165922] Sequence 1000000 / 2567781
+[8.374013] Sequence 2000000 / 2567781
+[9.461957] Adjusting marker info...
+[9.752504] Connecting preNodes
+[9.882436] Connecting 1000000 / 2567781
+[9.961328] Connecting 2000000 / 2567781
+[10.594334] Cleaning up memory
+[10.594998] Done creating preGraph
+[10.595034] Concatenation...
+[10.898104] Renumbering preNodes
+[10.898116] Initial preNode count 1228386
+[10.909764] Destroyed 1108467 preNodes
+[10.909772] Concatenation over!
+[10.909774] Clipping short tips off preGraph
+[10.942325] Concatenation...
+[10.995615] Renumbering preNodes
+[10.995627] Initial preNode count 119919
+[10.997083] Destroyed 104428 preNodes
+[10.997089] Concatenation over!
+[10.997091] 62936 tips cut off
+[10.997093] 15491 nodes left
+[10.997689] Writing into pregraph file /projects/bgmp/mbabins5/bioinformatics/Bi621/PS/PS6/PreGraph...
+[11.097840] Reading read set file /projects/bgmp/mbabins5/bioinformatics/Bi621/PS/PS6/Sequences;
+[11.543044] 2567781 sequences found
+[13.472620] Done
+[15.432733] Reading pre-graph file /projects/bgmp/mbabins5/bioinformatics/Bi621/PS/PS6/PreGraph
+[15.432787] Graph has 15491 nodes and 2567781 sequences
+[15.487564] Scanning pre-graph file /projects/bgmp/mbabins5/bioinformatics/Bi621/PS/PS6/PreGraph for k-mers
+[15.540129] 1644332 kmers found
+[15.677740] Sorting kmer occurence table ...
+[16.316099] Sorting done.
+[16.316113] Computing acceleration table...
+[16.350699] Computing offsets...
+[16.366653] Ghost Threading through reads 0 / 2567781
+[16.636743] Ghost Threading through reads 2000000 / 2567781
+[16.803570] Ghost Threading through reads 1000000 / 2567781
+[16.983992]  === Ghost-Threaded in 0.621616 s
+[16.984086] Threading through reads 0 / 2567781
+[17.640145] Threading through reads 1000000 / 2567781
+[17.967007] Threading through reads 2000000 / 2567781
+[18.292186]  === Threaded in 1.308178 s
+[18.656712] Correcting graph with cutoff 0.200000
+[18.657485] Determining eligible starting points
+[18.669947] Done listing starting nodes
+[18.669955] Initializing todo lists
+[18.671083] Done with initilization
+[18.671086] Activating arc lookup table
+[18.672960] Done activating arc lookup table
+[18.822405] 10000 / 15491 nodes visited
+[18.842571] Concatenation...
+[18.843226] Renumbering nodes
+[18.843231] Initial node count 15491
+[18.843472] Removed 5223 null nodes
+[18.843475] Concatenation over!
+[18.843477] Clipping short tips off graph, drastic
+[18.847514] Concatenation...
+[18.856010] Renumbering nodes
+[18.856024] Initial node count 10268
+[18.856164] Removed 4315 null nodes
+[18.856168] Concatenation over!
+[18.856169] 5953 nodes left
+[18.856541] Writing into graph file /projects/bgmp/mbabins5/bioinformatics/Bi621/PS/PS6/Graph2...
+[19.580467] Measuring median coverage depth...
+[19.582101] Median coverage depth = 33.683066
+[19.582146] Removing contigs with coverage < 16.841533...
+[19.585971] Concatenation...
+[19.623816] Renumbering nodes
+[19.623828] Initial node count 5953
+[19.623911] Removed 3654 null nodes
+[19.623914] Concatenation over!
+[19.623968] Concatenation...
+[19.624087] Renumbering nodes
+[19.624090] Initial node count 2299
+[19.624093] Removed 0 null nodes
+[19.624095] Concatenation over!
+[19.624132] Clipping short tips off graph, drastic
+[19.624385] Concatenation...
+[19.624898] Renumbering nodes
+[19.624902] Initial node count 2299
+[19.624948] Removed 89 null nodes
+[19.624950] Concatenation over!
+[19.624952] 2210 nodes left
+[19.624954] Read coherency...
+[19.624978] Identifying unique nodes
+[19.625019] Done, 703 unique nodes counted
+[19.625022] Trimming read tips
+[19.625083] Renumbering nodes
+[19.625085] Initial node count 2210
+[19.625089] Removed 0 null nodes
+[19.625091] Confronted to 0 multiple hits and 0 null over 0
+[19.625093] Read coherency over!
+[19.635493] Starting pebble resolution...
+[19.646805] Computing read to node mapping array sizes
+[19.671489] Computing read to node mappings
+[19.712501] Estimating library insert lengths...
+[19.725598] Done
+[19.725616] Computing direct node to node mappings
+[19.743100] Scaffolding node 0
+[19.750009]  === Nodes Scaffolded in 0.024390 s
+[19.755843] Preparing to correct graph with cutoff 0.200000
+[19.758383] Cleaning memory
+[19.758393] Deactivating local correction settings
+[19.758412] Pebble done.
+[19.758415] Starting pebble resolution...
+[19.770528] Computing read to node mapping array sizes
+[19.792486] Computing read to node mappings
+[19.827924] Estimating library insert lengths...
+[19.840948] Done
+[19.840966] Computing direct node to node mappings
+[19.857443] Scaffolding node 0
+[19.863671]  === Nodes Scaffolded in 0.022703 s
+[19.869586] Preparing to correct graph with cutoff 0.200000
+[19.871801] Cleaning memory
+[19.871809] Deactivating local correction settings
+[19.871840] Pebble done.
+[19.871845] Concatenation...
+[19.873142] Renumbering nodes
+[19.873147] Initial node count 2210
+[19.873402] Removed 109 null nodes
+[19.873422] Concatenation over!
+[19.873426] Removing reference contigs with coverage < 16.841533...
+[19.873533] Concatenation...
+[19.873630] Renumbering nodes
+[19.873635] Initial node count 2101
+[19.873640] Removed 0 null nodes
+[19.873657] Concatenation over!
+[19.886330] Writing contigs into /projects/bgmp/mbabins5/bioinformatics/Bi621/PS/PS6/contigs.fa...
+[20.333045] Writing into stats file /projects/bgmp/mbabins5/bioinformatics/Bi621/PS/PS6/stats.txt...
+[20.352352] Writing into graph file /projects/bgmp/mbabins5/bioinformatics/Bi621/PS/PS6/LastGraph...
+[20.907873] Estimated Coverage = 33.683066
+[20.907887] Estimated Coverage cutoff = 16.841533
+Final graph has 2101 nodes and n50 of 1843, max 10419, total 1143116, using 1899833/2567781 reads
+#This was included to familiarize myself with slurm processing 
+
+#velvetg script was manipulated to have 20x and 60x cut off for kmer 31. This was also done with insert 500.
+
+
+#files types scp to local User
+
+#files selected and ran through adj_contigs.py 
+#graphing bucket number and kmer freq. 
