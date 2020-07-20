@@ -1,0 +1,147 @@
+#notebook ps8
+
+-----July 15-------------
+
+#all work was done in talapas
+
+#made PS8 directory in talapas, git cloned from github PS8 URL
+
+#downloaded zebra fish genome chr using * function to contian all of them with wget
+
+#downloaded and got gtf file for zebrafish
+
+#entered bgmp_py3.7 env, installed STAR, samtools using conda install
+
+#created Danio_rerio.GRCz11.dna.ens97.STAR_2.7.1a to run STAR database
+
+
+# script for running Star - named genomeGenerator.star
+#!/bin/bash
+#SBATCH --partition=bgmp                   ### Partition
+#SBATCH --job-name=mbabins5zfgenome         ### Job Name
+#SBATCH --output=mbabins5zfgenome.txt    ###File in which to store job output
+#SBATCH --error=mbabins5zfgenome.er    ### File to store error in
+#SBATCH --nodes=1                       ### Needed to run job
+#SBATCH --ntasks-per-node=1                   ### Run on a single CPU
+#SBATCH --cpus-per-task=7             ### How many cpus needed for job
+#SBATCH --time=0-12:00:00               ### Wall Clock Time limit hrs:min:sec
+#SBATCH --account=bgmp                  ### Account used for job submission
+
+#Download commands for STAR - done in Conda environment
+% conda activate bgmp_py3
+% conda install star -c bioconda
+% STAR --version
+% conda install samtools -c bioconda
+% samtools --version
+
+#Directory <filename>.STAR_2.7.1a made for STAR database
+#STAR script 
+#files were referenced from directory, not copied into the working directory
+/usr/bin/time -v STAR \                                                                                                                                                     --runThreadN 7 \
+--runMode genomeGenerate \
+--genomeDir /projects/bgmp/mbabins5/bioinformatics/Bi621/PS/PS8/Danio_rerio.GRCz11.dna.ens97.STAR_2.7.1a \
+--genomeFastaFiles /projects/bgmp/mbabins5/bioinformatics/Bi621/PS/PS8/dre/Danio_rerio.GRCz11.dna.chromosome.*.fa \
+--sjdbGTFfile /projects/bgmp/mbabins5/bioinformatics/Bi621/PS/PS8/Danio_rerio.GRCz11.100.gtf   
+
+#slurm run succesful, specifty sjbd before GTF file. 
+#My user time for my script
+        User time (seconds): 2871.37
+        System time (seconds): 53.66
+        Percent of CPU this job got: 353%
+        Elapsed (wall clock) time (h:mm:ss or m:ss): 13:47.76
+        Average shared text size (kbytes): 0
+        Average unshared data size (kbytes): 0
+        Average stack size (kbytes): 0
+        Average total size (kbytes): 0
+        Maximum resident set size (kbytes): 28885300
+        Average resident set size (kbytes): 0
+        Major (requiring I/O) page faults: 0
+        Minor (reclaiming a frame) page faults: 9840681
+        Voluntary context switches: 20597
+        Involuntary context switches: 6360
+        Swaps: 0
+        File system inputs: 0
+        File system outputs: 0
+        Socket messages sent: 0
+        Socket messages received: 0
+        Signals delivered: 0
+        Page size (bytes): 4096
+        Exit status: 0
+
+
+#Align genome script - job set up
+
+#!/bin/bash
+#SBATCH --partition=bgmp                   ### Partition
+#SBATCH --job-name=mbabins5align        ### Job Name
+#SBATCH --output=mbabins5align.txt    ###File in which to store job output
+#SBATCH --error=mbabins5align.er    ### File to store error in
+#SBATCH --nodes=1                       ### Needed to run job
+#SBATCH --ntasks-per-node=1                   ### Run on a single CPU
+#SBATCH --cpus-per-task=7             ### How many cpus needed for job
+#SBATCH --time=0-12:00:00               ### Wall Clock Time limit hrs:min:sec
+#SBATCH --account=bgmp                  ### Account used for job submission
+
+
+#Using STAR to align read, used R1 and R2 files
+/usr/bin/time -v STAR --runThreadN 7 --runMode alignReads \
+ --outFilterMultimapNmax 3 \
+ --outSAMunmapped Within KeepPairs \
+ --alignIntronMax 1000000 --alignMatesGapMax 1000000 \
+ --readFilesCommand zcat \
+ --readFilesIn /projects/bgmp/shared/Bi621/dre_WT_ovar12_R1.qtrim.fq.gz /projects/bgmp/shared/Bi621/dre_WT_ovar12_R2.qtrim.fq.gz\
+ --genomeDir /projects/bgmp/mbabins5/bioinformatics/Bi621/PS/PS8/Danio_rerio.GRCz11.dna.ens97.STAR_2.7.1a \
+ --outFileNamePrefix aligned
+
+#User Time for align slurm script
+         User time (seconds): 1661.53
+        System time (seconds): 19.49
+        Percent of CPU this job got: 665%
+        Elapsed (wall clock) time (h:mm:ss or m:ss): 4:12.40
+        Average shared text size (kbytes): 0
+        Average unshared data size (kbytes): 0
+        Average stack size (kbytes): 0
+        Average total size (kbytes): 0
+        Maximum resident set size (kbytes): 15802624
+        Average resident set size (kbytes): 0
+        Major (requiring I/O) page faults: 0
+        Minor (reclaiming a frame) page faults: 609707
+        Voluntary context switches: 13377
+        Involuntary context switches: 3773
+        Swaps: 0
+        File system inputs: 0
+        File system outputs: 0
+        Socket messages sent: 0
+        Socket messages received: 0
+        Signals delivered: 0
+        Page size (bytes): 4096
+        Exit status: 0
+
+#results overviewed with -less command and -head 30
+#started interactive session to handle samtool commands
+#bam files sorted and then converted to sam:
+        #samtools sort aligned.out.bam -o sorted.align.bam
+
+        #samtools index sorted.aligned.bam
+
+        #samtools view sorted.aligned.bam 1 > alignedchr1.sam
+
+
+#sudo parse command as bamparse.py:
+mapped = 0
+not_mapped = 0
+
+with open("alignedAligned.out.sam", "r") as sam:
+        for line in sam:
+                if not line.startswith("@"): #select out for header
+                        list_line = line.split() #split lines to make callable
+                        int_bit =int(list_line[1]) #line in file str, convert to int, call bitwise flag
+                        if ((int_bit & 4) != 4): #if not left most and no seccondary aligned, add
+                                if ((int_bit & 256) != 256):
+                                        mapped += 1
+                        else:
+                                not_mapped += 1 #store unmapped operation here
+
+print(mapped,'\t',not_mapped,'\t')
+
+#code was run originally without &256, however direction asked to not count reads aligned more then once
